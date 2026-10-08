@@ -217,14 +217,25 @@ class Boot
                 ?? getenv('CI_ENVIRONMENT')
                 ?: 'production';
 
+            $env = strtolower(trim((string) $env, " \t\n\r\0\x0B\"'"));
+            if (! in_array($env, ['production', 'development', 'testing'], true)) {
+                $env = 'production';
+            }
             define('ENVIRONMENT', $env);
         }
     }
 
     protected static function loadEnvironmentBootstrap(Paths $paths, bool $exit = true): void
     {
-        if (is_file($paths->appDirectory . '/Config/Boot/' . ENVIRONMENT . '.php')) {
-            require_once $paths->appDirectory . '/Config/Boot/' . ENVIRONMENT . '.php';
+        $bootFile = $paths->appDirectory . '/Config/Boot/' . ENVIRONMENT . '.php';
+        if (is_file($bootFile)) {
+            require_once $bootFile;
+
+            return;
+        }
+
+        if (is_file($paths->appDirectory . '/Config/Boot/production.php')) {
+            require_once $paths->appDirectory . '/Config/Boot/production.php';
 
             return;
         }
