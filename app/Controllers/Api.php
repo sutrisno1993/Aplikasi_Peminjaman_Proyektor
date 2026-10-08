@@ -430,4 +430,86 @@ class Api extends ResourceController
             'message' => "Keluhan unit $unitId telah ditandai selesai diperbaiki.",
         ]);
     }
+
+    // POST /api/login
+    public function login()
+    {
+        $input = $this->request->getJSON(true) ?? $this->request->getPost();
+        $username = trim($input['username'] ?? '');
+        $password = trim($input['password'] ?? '');
+
+        if (empty($username) || empty($password)) {
+            return $this->fail('Username dan password wajib diisi.', 400);
+        }
+
+        $db = \Config\Database::connect();
+        $user = null;
+        if ($db->tableExists('admin_users')) {
+            $user = $db->table('admin_users')->where('username', $username)->get()->getRowArray();
+        }
+
+        $isValid = false;
+        $fullName = 'Administrator Sarpras';
+        $role = 'admin';
+
+        if ($user) {
+            if (password_verify($password, $user['password']) || $password === $user['password']) {
+                $isValid = true;
+                $fullName = $user['full_name'] ?? 'Administrator';
+                $role = $user['role'] ?? 'admin';
+            }
+        } else {
+            // Built-in default admin credentials
+            if (($username === 'admin' || $username === 'sarpras') && 
+                ($password === 'admin' || $password === 'admin123' || $password === 'Kota_1993' || $password === 'sarpras11maret')) {
+                $isValid = true;
+                $fullName = 'Admin Sarpras SMK 11 Maret';
+                $role = 'superadmin';
+            }
+        }
+
+        if (!$isValid) {
+            return $this->fail('Username atau password admin salah!', 401);
+        }
+
+        $session = session();
+        $session->set('is_admin_logged_in', true);
+        $session->set('admin_user', $username);
+        $session->set('admin_name', $fullName);
+
+        return $this->respond([
+            'status'  => 'success',
+            'message' => 'Login Admin Berhasil!',
+            'data'    => [
+                'username' => $username,
+                'fullName' => $fullName,
+                'role'     => $role,
+                'token'    => md5($username . time() . 'simpro_salt_secret')
+            ]
+        ]);
+    }
+
+    // POST /api/logout
+    public function logout()
+    {
+        $session = session();
+        $session->destroy();
+        return $this->respond([
+            'status'  => 'success',
+            'message' => 'Logout admin berhasil.'
+        ]);
+    }
+
+    // GET /api/auth-status
+    public function authStatus()
+    {
+        $session = session();
+        $isLoggedIn = $session->get('is_admin_logged_in') ?? false;
+        return $this->respond([
+            'status'     => 'success',
+            'isLoggedIn' => (bool)$isLoggedIn,
+            'user'       => $session->get('admin_user'),
+            'fullName'   => $session->get('admin_name')
+        ]);
+    }
 }

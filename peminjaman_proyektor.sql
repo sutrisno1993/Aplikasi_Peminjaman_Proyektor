@@ -103,6 +103,23 @@ CREATE TABLE `komplain_sarpras` (
   INDEX `idx_is_resolved` (`is_resolved`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- ---------------------------------------------------------------------
+-- 6. TABEL: admin_users (Otentikasi Administrator Sarpras)
+-- ---------------------------------------------------------------------
+DROP TABLE IF EXISTS `admin_users`;
+CREATE TABLE `admin_users` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `username` VARCHAR(50) NOT NULL UNIQUE,
+  `password` VARCHAR(255) NOT NULL,
+  `full_name` VARCHAR(100) NOT NULL,
+  `role` VARCHAR(50) NOT NULL DEFAULT 'admin',
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO `admin_users` (`username`, `password`, `full_name`, `role`) VALUES
+('admin', 'admin', 'Administrator Sarpras SMK 11 Maret', 'superadmin'),
+('sarpras', 'Kota_1993', 'Petugas Sarana & Prasarana', 'admin');
+
 -- =====================================================================
 -- DATA AWAL (SEED DATA)
 -- =====================================================================

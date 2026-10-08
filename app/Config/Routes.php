@@ -7,6 +7,11 @@ $routes->get('/', 'Home::index');
 
 // API Endpoints for SIMPRO
 $routes->group('api', ['namespace' => 'App\Controllers'], static function ($routes) {
+    // Auth Endpoints
+    $routes->post('login', 'Api::login');
+    $routes->post('logout', 'Api::logout');
+    $routes->get('auth-status', 'Api::authStatus');
+
     $routes->get('projectors', 'Api::getProjectors');
     $routes->post('projectors', 'Api::saveProjector');
     $routes->delete('projectors/(:segment)', 'Api::deleteProjector/$1');
