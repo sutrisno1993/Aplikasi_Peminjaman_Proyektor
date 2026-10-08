@@ -84,7 +84,7 @@ php_errors.log
 #-------------------------
 # Composer
 #-------------------------
-vendor/
+# vendor/ is tracked for direct cPanel deployment
 
 #-------------------------
 # IDE / Development Files

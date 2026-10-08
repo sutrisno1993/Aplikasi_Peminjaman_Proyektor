@@ -1,9 +1,11 @@
 @echo off
+cd /d "%~dp0"
 title SIMPRO - Build Frontend untuk Production
 echo ========================================================
 echo   SIMPRO - BUILD FRONTEND REACT KE FOLDER PUBLIC
 echo ========================================================
 echo.
+echo Lokasi Project: %CD%
 echo Sedang melakukan kompilasi file React/Vite...
 echo.
 
