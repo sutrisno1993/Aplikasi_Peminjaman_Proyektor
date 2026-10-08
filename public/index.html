@@ -1,0 +1,1256 @@
+<!DOCTYPE html>
+<html lang="id" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SIMPRO - Sistem Informasi & Peminjaman Proyektor Sekolah</title>
+  <meta name="description" content="Aplikasi Web Manajemen dan Peminjaman Proyektor Sekolah SMK 11 Maret" />
+  <link rel="icon" type="image/svg+xml" href="/projector-icon.svg" />
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+              800: '#3730a3',
+              900: '#312e81',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- React 18 & Babel & Libraries CDN -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.4/dist/confetti.browser.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+
+  <style>
+    @keyframes pulse-subtle {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+    .animate-pulse-subtle {
+      animation: pulse-subtle 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    .glassmorphism {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+    .dark .glassmorphism {
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    .dark ::-webkit-scrollbar-thumb {
+      background: #334155;
+    }
+  </style>
+</head>
+<body class="h-full bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 antialiased transition-colors duration-200">
+  <div id="root"></div>
+
+  <!-- React Application Logic -->
+  <script type="text/babel">
+    const { useState, useEffect, useMemo, useRef } = React;
+
+    // --- DATA DEFAULT ---
+    const DEFAULT_PROJECTORS = [
+      { id: 'PRJ-01', code: 'PRJ-01', name: 'Proyektor 01', model: 'Epson EB-E500 (3300 Lumens)', bagColor: 'Tas Merah / Tag Merah', bagColorHex: '#ef4444', location: 'Ruang Sarpras / Rak A1', status: 'tersedia', lampHours: '320 Jam', lastMaintenance: '2026-09-15' },
+      { id: 'PRJ-02', code: 'PRJ-02', name: 'Proyektor 02', model: 'Epson EB-X500 (3600 Lumens)', bagColor: 'Tas Biru / Tag Biru', bagColorHex: '#3b82f6', location: 'Ruang Sarpras / Rak A2', status: 'tersedia', lampHours: '480 Jam', lastMaintenance: '2026-09-20' },
+      { id: 'PRJ-03', code: 'PRJ-03', name: 'Proyektor 03', model: 'BenQ MX535 (3600 Lumens DLP)', bagColor: 'Tas Hitam / Tag Hitam', bagColorHex: '#334155', location: 'Ruang Sarpras / Rak A3', status: 'tersedia', lampHours: '210 Jam', lastMaintenance: '2026-09-28' },
+      { id: 'PRJ-04', code: 'PRJ-04', name: 'Proyektor 04', model: 'InFocus IN114x (3800 Lumens)', bagColor: 'Tas Abu-Abu / Tag Abu', bagColorHex: '#64748b', location: 'Ruang Sarpras / Rak A4', status: 'tersedia', lampHours: '560 Jam', lastMaintenance: '2026-09-10' },
+      { id: 'PRJ-05', code: 'PRJ-05', name: 'Proyektor 05', model: 'Epson EB-E500 (3300 Lumens)', bagColor: 'Tas Hijau / Tag Hijau', bagColorHex: '#10b981', location: 'Ruang Sarpras / Rak A5', status: 'tersedia', lampHours: '190 Jam', lastMaintenance: '2026-10-01' }
+    ];
+
+    const DEFAULT_TEACHERS = [
+      'REZA PATRIOTA PUTRA, S.Kom', 'TAMAN SASTRA DIKARNA, S.Pd', 'SUHARNO, S.PdI', 'SAMSUL HUDA, S.Pd',
+      'AHMAD HUSEN NASUTION, SS', 'WISNU NARA UTAMA, S.Pd', 'FITRI MULYANI, S.Pd', 'DERA ISMAWATI, A.Md',
+      'WIDONI SANTOSO, S.Pd', 'SRI TITA MULYATI', 'EUIS SUPRIHATIN, S.Pd', 'WIDA HARTANI, S.Pd',
+      'LUTHFI AHMAD NAZHIF, S.Pd', 'WIDJAYANTI, S.Sos', 'DEDE HIDAYATULLAH', 'KOKO, S.T',
+      'CHRISTIN SIREGAR, S.Pd', 'MUHAMMAD SYAFE\'I, S.Pd', 'MUHAMMAD ANDIKA PRAWIRA, S.Kom', 'YULISTIO HARDIYANTO, S.T',
+      'KUAT SUPARTO, S.T', 'ASTRI WULANDARI, S.Pd', 'AGUNG AINUL HAKIM, S.Pd', 'SUTRISNO',
+      'MUHAMAD ALBAR SAPIN, S.M', 'TIARA SHANTI HARTONO, S.Sos', 'OKTARI QOMIMIS SYATUN, S.Pd', 'CATUR WULANDARI, A.Md',
+      'DWIANA RIKASARI, S.AP', 'IDAYATUL MUSTAFIDAH, S.E', 'RISKA AMELIA, S.M', 'SISTER NINDA PUTRI, S.Pd',
+      'DELA AMELIA PUTRI, S.Pd', 'WIWIK UMAYAH, S.Pd', 'ENDANG KURNIAWAN, S.T', 'FAUZI, S.Kom',
+      'AZMIRAL AZIZ, S.Pd', 'MUHAMMAD SYAHCTIKO, S.Pd', 'ISMAIL', 'SUDIYANI', 'ATIM', 'ENDONG', 'BUCHORI'
+    ].map((name, idx) => ({
+      id: `TCH-${String(idx + 1).padStart(3, '0')}`,
+      name,
+      nip: '-',
+      phone: '',
+      status: 'aktif'
+    }));
+
+    const DEFAULT_CLASSES = [
+      'X AKL', 'X MP 1', 'X MP 2', 'X TSM 1', 'X TSM 2', 'X TKR 1', 'X TKR 2', 'X TKJ 1', 'X TKJ 2',
+      'XI AKL', 'XI MP 1', 'XI MP 2', 'XI TSM 1', 'XI TSM 2', 'XI TKR 1', 'XI TKR 2', 'XI TKJ 1', 'XI TKJ 2',
+      'XII AKL', 'XII MP 1', 'XII MP 2', 'XII TSM 1', 'XII TSM 2', 'XII TKR 1', 'XII TKR 2', 'XII TKJ 1', 'XII TKJ 2'
+    ].map((name, idx) => ({
+      id: `CLS-${String(idx + 1).padStart(2, '0')}`,
+      name,
+      grade: name.split(' ')[0],
+      major: name.split(' ')[1],
+      building: 'Gedung Sekolah',
+      homeroomTeacher: '-'
+    }));
+
+    const DURATION_PERIODS = [
+      'Jam ke 1-2', 'Jam ke 3-4', 'Jam ke 5-6', 'Jam ke 7-8', 'Jam ke 9-10',
+      'Jam ke-1', 'Jam ke-2', 'Jam ke-3', 'Jam ke-4', 'Jam ke-5', 'Jam ke-6', 'Jam ke-7', 'Jam ke-8', 'Jam ke-9', 'Jam ke-10',
+      'Seharian Penuh'
+    ];
+
+    const CHECKLIST_ITEMS = [
+      { id: 'powerCable', label: 'Kabel Power AC', desc: 'Kabel daya proyektor dalam kondisi baik' },
+      { id: 'hdmiCable', label: 'Kabel HDMI / Video', desc: 'Konektor emas utuh & tidak longgar' },
+      { id: 'socketPlug', label: 'Stop Kontak / Rol Kabel', desc: 'Colokan cabang ekstensi listrik' },
+      { id: 'remoteBag', label: 'Remote Control & Tas Unit', desc: 'Fisik tas bersih dan resleting lancar' },
+      { id: 'wirelessDongle', label: 'Wireless Dongle', desc: 'Modul transmisi layar Anycast/EzCast' },
+    ];
+
+    // --- SOUND UTILS (Web Audio API Synthesizer) ---
+    const playChime = (type = 'success') => {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        const now = ctx.currentTime;
+        if (type === 'success') {
+          osc.frequency.setValueAtTime(523.25, now); // C5
+          osc.frequency.exponentialRampToValueAtTime(659.25, now + 0.1); // E5
+          osc.frequency.exponentialRampToValueAtTime(783.99, now + 0.2); // G5
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+          osc.start(now);
+          osc.stop(now + 0.45);
+        } else if (type === 'return') {
+          osc.frequency.setValueAtTime(659.25, now);
+          osc.frequency.exponentialRampToValueAtTime(523.25, now + 0.15);
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+          osc.start(now);
+          osc.stop(now + 0.4);
+        } else {
+          osc.frequency.setValueAtTime(440, now);
+          gain.gain.setValueAtTime(0.1, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+          osc.start(now);
+          osc.stop(now + 0.12);
+        }
+      } catch (e) {}
+    };
+
+    // --- MAIN APP COMPONENT ---
+    function App() {
+      const [activeTab, setActiveTab] = useState('peminjaman');
+      const [darkMode, setDarkMode] = useState(() => localStorage.getItem('simpro_dark') === 'true');
+      const [projectors, setProjectors] = useState(() => {
+        const saved = localStorage.getItem('simpro_projectors');
+        return saved ? JSON.parse(saved) : DEFAULT_PROJECTORS;
+      });
+      const [teachers, setTeachers] = useState(() => {
+        const saved = localStorage.getItem('simpro_teachers');
+        return saved ? JSON.parse(saved) : DEFAULT_TEACHERS;
+      });
+      const [classes, setClasses] = useState(() => {
+        const saved = localStorage.getItem('simpro_classes');
+        return saved ? JSON.parse(saved) : DEFAULT_CLASSES;
+      });
+      const [auditLogs, setAuditLogs] = useState(() => {
+        const saved = localStorage.getItem('simpro_logs');
+        return saved ? JSON.parse(saved) : [];
+      });
+
+      // Borrow Form state
+      const [selectedUnitId, setSelectedUnitId] = useState('PRJ-01');
+      const [teacherName, setTeacherName] = useState('');
+      const [destinationClass, setDestinationClass] = useState('');
+      const [durationPeriod, setDurationPeriod] = useState(DURATION_PERIODS[0]);
+      const [notes, setNotes] = useState('');
+      const [checklist, setChecklist] = useState({
+        powerCable: true,
+        hdmiCable: true,
+        socketPlug: true,
+        remoteBag: true,
+        wirelessDongle: true,
+      });
+
+      // Modals
+      const [returnModalUnit, setReturnModalUnit] = useState(null);
+      const [returnCondition, setReturnCondition] = useState('baik');
+      const [returnComplaint, setReturnComplaint] = useState('');
+      const [qrModalUnit, setQrModalUnit] = useState(null);
+      const [toastMessage, setToastMessage] = useState(null);
+      const [searchQuery, setSearchQuery] = useState('');
+      const [logFilterStatus, setLogFilterStatus] = useState('all');
+
+      // Sync dark mode class
+      useEffect(() => {
+        if (darkMode) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+        localStorage.setItem('simpro_dark', darkMode ? 'true' : 'false');
+      }, [darkMode]);
+
+      // Show toast helper
+      const showToast = (msg, type = 'info') => {
+        setToastMessage({ msg, type });
+        setTimeout(() => setToastMessage(null), 4000);
+      };
+
+      // Sync with CodeIgniter 4 Backend REST API
+      const syncWithBackend = async () => {
+        try {
+          const [projRes, tchRes, clsRes, logRes] = await Promise.allSettled([
+            fetch('/api/projectors'),
+            fetch('/api/teachers'),
+            fetch('/api/classes'),
+            fetch('/api/logs')
+          ]);
+
+          if (projRes.status === 'fulfilled' && projRes.value.ok) {
+            const data = await projRes.value.json();
+            if (data.data && Array.isArray(data.data) && data.data.length > 0) {
+              setProjectors(data.data);
+              localStorage.setItem('simpro_projectors', JSON.stringify(data.data));
+            }
+          }
+
+          if (tchRes.status === 'fulfilled' && tchRes.value.ok) {
+            const data = await tchRes.value.json();
+            if (data.data && Array.isArray(data.data) && data.data.length > 0) {
+              setTeachers(data.data);
+              localStorage.setItem('simpro_teachers', JSON.stringify(data.data));
+            }
+          }
+
+          if (clsRes.status === 'fulfilled' && clsRes.value.ok) {
+            const data = await clsRes.value.json();
+            if (data.data && Array.isArray(data.data) && data.data.length > 0) {
+              setClasses(data.data);
+              localStorage.setItem('simpro_classes', JSON.stringify(data.data));
+            }
+          }
+
+          if (logRes.status === 'fulfilled' && logRes.value.ok) {
+            const data = await logRes.value.json();
+            if (data.data && Array.isArray(data.data)) {
+              setAuditLogs(data.data);
+              localStorage.setItem('simpro_logs', JSON.stringify(data.data));
+            }
+          }
+        } catch (e) {
+          console.warn('Sync API offline fallback');
+        }
+      };
+
+      useEffect(() => {
+        syncWithBackend();
+        const interval = setInterval(syncWithBackend, 10000);
+        return () => clearInterval(interval);
+      }, []);
+
+      // Selected projector object
+      const selectedProjector = useMemo(() => {
+        return projectors.find(p => p.id === selectedUnitId) || projectors[0];
+      }, [projectors, selectedUnitId]);
+
+      // Handle Borrow Submit
+      const handleBorrow = async (e) => {
+        e.preventDefault();
+        if (!teacherName) {
+          showToast('Pilih Nama Guru Peminjam!', 'error');
+          return;
+        }
+        if (!destinationClass) {
+          showToast('Pilih Kelas Tujuan!', 'error');
+          return;
+        }
+        if (selectedProjector.status !== 'tersedia') {
+          showToast(`Unit ${selectedProjector.id} sedang ${selectedProjector.status}!`, 'error');
+          return;
+        }
+
+        const newLog = {
+          id: 'LOG-' + Date.now(),
+          unit_id: selectedProjector.id,
+          unitId: selectedProjector.id,
+          unitName: selectedProjector.name,
+          teacher_name: teacherName,
+          teacherName: teacherName,
+          destination_class: destinationClass,
+          destinationClass: destinationClass,
+          duration_period: durationPeriod,
+          durationPeriod: durationPeriod,
+          borrow_time: new Date().toISOString(),
+          borrowTime: new Date().toISOString(),
+          checklist_borrow: checklist,
+          checklistBorrow: checklist,
+          status: 'aktif',
+          notes: notes
+        };
+
+        const activeBorrowData = {
+          teacherName,
+          destinationClass,
+          durationPeriod,
+          borrowTime: new Date().toISOString(),
+          checklist,
+          notes
+        };
+
+        // Update local state
+        const updatedProjectors = projectors.map(p => {
+          if (p.id === selectedProjector.id) {
+            return { ...p, status: 'dipinjam', activeBorrow: activeBorrowData };
+          }
+          return p;
+        });
+
+        const updatedLogs = [newLog, ...auditLogs];
+        setProjectors(updatedProjectors);
+        setAuditLogs(updatedLogs);
+        localStorage.setItem('simpro_projectors', JSON.stringify(updatedProjectors));
+        localStorage.setItem('simpro_logs', JSON.stringify(updatedLogs));
+
+        // Trigger confetti & sound
+        try {
+          if (window.confetti) {
+            window.confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
+          }
+        } catch (err) {}
+        playChime('success');
+        showToast(`Berhasil meminjam ${selectedProjector.name} untuk ${destinationClass}!`, 'success');
+
+        // Post to CI4 API
+        try {
+          await fetch('/api/borrow', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              unitId: selectedProjector.id,
+              teacherName,
+              destinationClass,
+              durationPeriod,
+              checklist,
+              notes
+            })
+          });
+        } catch (e) {}
+
+        // Reset form inputs
+        setTeacherName('');
+        setDestinationClass('');
+        setNotes('');
+      };
+
+      // Handle Return Submit
+      const handleReturnSubmit = async (e) => {
+        e.preventDefault();
+        if (!returnModalUnit) return;
+
+        const unit = returnModalUnit;
+        const updatedProjectors = projectors.map(p => {
+          if (p.id === unit.id) {
+            return {
+              ...p,
+              status: returnCondition === 'rusak' ? 'perbaikan' : 'tersedia',
+              activeBorrow: null
+            };
+          }
+          return p;
+        });
+
+        const updatedLogs = auditLogs.map(log => {
+          if (log.unit_id === unit.id && log.status === 'aktif') {
+            return {
+              ...log,
+              status: returnCondition === 'rusak' ? 'komplain' : 'selesai',
+              return_time: new Date().toISOString(),
+              returnTime: new Date().toISOString(),
+              return_condition: returnCondition,
+              complaint: returnComplaint
+            };
+          }
+          return log;
+        });
+
+        setProjectors(updatedProjectors);
+        setAuditLogs(updatedLogs);
+        localStorage.setItem('simpro_projectors', JSON.stringify(updatedProjectors));
+        localStorage.setItem('simpro_logs', JSON.stringify(updatedLogs));
+
+        playChime('return');
+        showToast(`Unit ${unit.name} berhasil dikembalikan (${returnCondition.toUpperCase()})`, 'success');
+        setReturnModalUnit(null);
+        setReturnComplaint('');
+        setReturnCondition('baik');
+
+        // Post to API
+        try {
+          await fetch('/api/return', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              unitId: unit.id,
+              condition: returnCondition,
+              complaint: returnComplaint
+            })
+          });
+        } catch (e) {}
+      };
+
+      // Filtered logs
+      const filteredLogs = useMemo(() => {
+        return auditLogs.filter(log => {
+          const matchQuery = (log.teacher_name || log.teacherName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                             (log.destination_class || log.destinationClass || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                             (log.unit_id || log.unitId || '').toLowerCase().includes(searchQuery.toLowerCase());
+          const matchStatus = logFilterStatus === 'all' || log.status === logFilterStatus;
+          return matchQuery && matchStatus;
+        });
+      }, [auditLogs, searchQuery, logFilterStatus]);
+
+      // Summary Stats
+      const stats = useMemo(() => {
+        const totalBorrow = auditLogs.length;
+        const activeCount = projectors.filter(p => p.status === 'dipinjam').length;
+        const availableCount = projectors.filter(p => p.status === 'tersedia').length;
+        const maintenanceCount = projectors.filter(p => p.status === 'perbaikan').length;
+        return { totalBorrow, activeCount, availableCount, maintenanceCount };
+      }, [auditLogs, projectors]);
+
+      return (
+        <div className="min-h-screen flex flex-col font-sans">
+          {/* Toast Alert */}
+          {toastMessage && (
+            <div className="fixed top-4 right-4 z-50 animate-bounce">
+              <div className={`px-5 py-3 rounded-xl shadow-2xl text-white font-medium flex items-center gap-3 ${
+                toastMessage.type === 'success' ? 'bg-emerald-600' :
+                toastMessage.type === 'error' ? 'bg-rose-600' : 'bg-brand-600'
+              }`}>
+                <span>{toastMessage.type === 'success' ? '✓' : toastMessage.type === 'error' ? '✕' : 'ℹ'}</span>
+                <span>{toastMessage.msg}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Top Navigation Bar */}
+          <header className="sticky top-0 z-40 glassmorphism border-b border-slate-200 dark:border-slate-800 shadow-sm transition-all">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-500 flex items-center justify-center text-white font-bold text-xl shadow-md">
+                  📽️
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h1 className="text-lg font-extrabold bg-gradient-to-r from-brand-600 to-indigo-600 dark:from-brand-400 dark:to-indigo-300 bg-clip-text text-transparent">
+                      SIMPRO
+                    </h1>
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-brand-100 text-brand-700 dark:bg-brand-900/50 dark:text-brand-300 font-semibold">
+                      v4.7
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">SMK 11 Maret Jakarta</p>
+                </div>
+              </div>
+
+              {/* Navigation Tabs */}
+              <nav className="hidden md:flex items-center gap-1 bg-slate-100 dark:bg-slate-900 p-1 rounded-xl border border-slate-200 dark:border-slate-800">
+                <button
+                  onClick={() => { setActiveTab('peminjaman'); playChime('click'); }}
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                    activeTab === 'peminjaman'
+                      ? 'bg-white dark:bg-slate-800 text-brand-600 dark:text-brand-400 shadow-sm'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                  }`}
+                >
+                  ⚡ Peminjaman Cepat
+                </button>
+                <button
+                  onClick={() => { setActiveTab('units'); playChime('click'); }}
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                    activeTab === 'units'
+                      ? 'bg-white dark:bg-slate-800 text-brand-600 dark:text-brand-400 shadow-sm'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                  }`}
+                >
+                  📽️ Daftar 5 Unit
+                </button>
+                <button
+                  onClick={() => { setActiveTab('riwayat'); playChime('click'); }}
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                    activeTab === 'riwayat'
+                      ? 'bg-white dark:bg-slate-800 text-brand-600 dark:text-brand-400 shadow-sm'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                  }`}
+                >
+                  📋 Riwayat Log
+                </button>
+                <button
+                  onClick={() => { setActiveTab('master'); playChime('click'); }}
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                    activeTab === 'master'
+                      ? 'bg-white dark:bg-slate-800 text-brand-600 dark:text-brand-400 shadow-sm'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                  }`}
+                >
+                  ⚙️ Master Data (27 Kelas & 43 Guru)
+                </button>
+              </nav>
+
+              {/* Actions Right */}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setDarkMode(!darkMode)}
+                  className="w-10 h-10 rounded-xl flex items-center justify-center bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors"
+                  title="Ganti Mode Gelap / Terang"
+                >
+                  {darkMode ? '☀️' : '🌙'}
+                </button>
+              </div>
+            </div>
+
+            {/* Mobile Tab Bar */}
+            <div className="flex md:hidden border-t border-slate-200 dark:border-slate-800 px-2 py-1.5 overflow-x-auto gap-1 bg-slate-100/50 dark:bg-slate-900/50">
+              <button
+                onClick={() => setActiveTab('peminjaman')}
+                className={`px-3 py-1.5 text-xs font-semibold rounded-lg whitespace-nowrap ${
+                  activeTab === 'peminjaman' ? 'bg-brand-600 text-white' : 'text-slate-600 dark:text-slate-400'
+                }`}
+              >
+                ⚡ Pinjam
+              </button>
+              <button
+                onClick={() => setActiveTab('units')}
+                className={`px-3 py-1.5 text-xs font-semibold rounded-lg whitespace-nowrap ${
+                  activeTab === 'units' ? 'bg-brand-600 text-white' : 'text-slate-600 dark:text-slate-400'
+                }`}
+              >
+                📽️ 5 Unit
+              </button>
+              <button
+                onClick={() => setActiveTab('riwayat')}
+                className={`px-3 py-1.5 text-xs font-semibold rounded-lg whitespace-nowrap ${
+                  activeTab === 'riwayat' ? 'bg-brand-600 text-white' : 'text-slate-600 dark:text-slate-400'
+                }`}
+              >
+                📋 Riwayat
+              </button>
+              <button
+                onClick={() => setActiveTab('master')}
+                className={`px-3 py-1.5 text-xs font-semibold rounded-lg whitespace-nowrap ${
+                  activeTab === 'master' ? 'bg-brand-600 text-white' : 'text-slate-600 dark:text-slate-400'
+                }`}
+              >
+                ⚙️ Master
+              </button>
+            </div>
+          </header>
+
+          {/* Main Container */}
+          <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+            
+            {/* Quick Stats Top Cards */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-2xl font-bold">
+                  ✓
+                </div>
+                <div>
+                  <div className="text-2xl font-extrabold text-slate-900 dark:text-white">{stats.availableCount} Unit</div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">Tersedia Siap Pakai</div>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center text-2xl font-bold">
+                  ⏳
+                </div>
+                <div>
+                  <div className="text-2xl font-extrabold text-slate-900 dark:text-white">{stats.activeCount} Unit</div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">Sedang Dipinjam</div>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-brand-100 dark:bg-brand-950/60 text-brand-600 dark:text-brand-400 flex items-center justify-center text-2xl font-bold">
+                  📊
+                </div>
+                <div>
+                  <div className="text-2xl font-extrabold text-slate-900 dark:text-white">{stats.totalBorrow}</div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">Total Aktivitas Log</div>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-2xl font-bold">
+                  👨‍🏫
+                </div>
+                <div>
+                  <div className="text-2xl font-extrabold text-slate-900 dark:text-white">{teachers.length} Guru</div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">&amp; {classes.length} Kelas Resmi</div>
+                </div>
+              </div>
+            </div>
+
+            {/* TAB 1: FORM PEMINJAMAN CEPAT */}
+            {activeTab === 'peminjaman' && (
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                {/* Left: Unit Selector (5 Units) */}
+                <div className="lg:col-span-5 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                      <span>1. Pilih Unit Proyektor</span>
+                      <span className="text-xs font-normal text-slate-500">(5 Unit Tersedia)</span>
+                    </h2>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-3">
+                    {projectors.map(proj => {
+                      const isSelected = selectedUnitId === proj.id;
+                      const isAvailable = proj.status === 'tersedia';
+                      return (
+                        <div
+                          key={proj.id}
+                          onClick={() => { setSelectedUnitId(proj.id); playChime('click'); }}
+                          className={`relative p-4 rounded-2xl border transition-all cursor-pointer ${
+                            isSelected
+                              ? 'border-brand-500 bg-brand-50/40 dark:bg-brand-950/20 ring-2 ring-brand-500/20 shadow-md'
+                              : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-700'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between">
+                            <div className="flex items-center gap-3">
+                              <div
+                                className="w-4 h-10 rounded-full"
+                                style={{ backgroundColor: proj.bagColorHex || proj.bag_color_hex || '#3b82f6' }}
+                              />
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-extrabold text-slate-900 dark:text-white">{proj.name}</span>
+                                  <span className="text-xs px-2 py-0.5 rounded-full font-bold uppercase" style={{
+                                    backgroundColor: (proj.bagColorHex || '#3b82f6') + '20',
+                                    color: proj.bagColorHex || '#3b82f6'
+                                  }}>
+                                    {proj.bagColor || proj.bag_color}
+                                  </span>
+                                </div>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-medium">{proj.model}</p>
+                              </div>
+                            </div>
+
+                            {/* Status Badge */}
+                            <div>
+                              {isAvailable ? (
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400">
+                                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                  Tersedia
+                                </span>
+                              ) : proj.status === 'dipinjam' ? (
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-400">
+                                  <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+                                  Dipinjam
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-400">
+                                  Perbaikan
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Active Borrow Info */}
+                          {proj.status === 'dipinjam' && proj.activeBorrow && (
+                            <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
+                              <div>
+                                <span className="text-slate-500 dark:text-slate-400">Peminjam: </span>
+                                <span className="font-bold text-slate-800 dark:text-slate-200">{proj.activeBorrow.teacherName}</span>
+                                <span className="text-brand-600 dark:text-brand-400 font-semibold"> ({proj.activeBorrow.destinationClass})</span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setReturnModalUnit(proj);
+                                }}
+                                className="px-3 py-1 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shadow-sm"
+                              >
+                                Kembalikan ↩
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Right: Borrow Form Card */}
+                <div className="lg:col-span-7">
+                  <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
+                    <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
+                      <div>
+                        <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+                          2. Formulir Peminjaman Unit: <span className="text-brand-600 dark:text-brand-400">{selectedProjector.name}</span>
+                        </h2>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">Lengkapi data guru, kelas, dan checklist kelengkapan barang.</p>
+                      </div>
+                      <span className="text-xs px-3 py-1 rounded-full font-bold uppercase" style={{
+                        backgroundColor: (selectedProjector.bagColorHex || '#3b82f6') + '20',
+                        color: selectedProjector.bagColorHex || '#3b82f6'
+                      }}>
+                        {selectedProjector.bagColor || selectedProjector.bag_color}
+                      </span>
+                    </div>
+
+                    <form onSubmit={handleBorrow} className="space-y-4">
+                      {/* Teacher Dropdown */}
+                      <div>
+                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
+                          Nama Guru Peminjam (43 Guru) *
+                        </label>
+                        <select
+                          value={teacherName}
+                          onChange={(e) => setTeacherName(e.target.value)}
+                          required
+                          className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-brand-500 outline-none"
+                        >
+                          <option value="">-- Pilih Nama Guru --</option>
+                          {teachers.map(t => (
+                            <option key={t.id || t.name} value={t.name}>{t.name}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Class & Duration Grid */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {/* Class Dropdown */}
+                        <div>
+                          <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
+                            Kelas Tujuan (27 Kelas) *
+                          </label>
+                          <select
+                            value={destinationClass}
+                            onChange={(e) => setDestinationClass(e.target.value)}
+                            required
+                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-brand-500 outline-none"
+                          >
+                            <option value="">-- Pilih Kelas --</option>
+                            <optgroup label="Kelas X (10)">
+                              {classes.filter(c => c.name.startsWith('X ')).map(c => (
+                                <option key={c.id || c.name} value={c.name}>{c.name}</option>
+                              ))}
+                            </optgroup>
+                            <optgroup label="Kelas XI (11)">
+                              {classes.filter(c => c.name.startsWith('XI ')).map(c => (
+                                <option key={c.id || c.name} value={c.name}>{c.name}</option>
+                              ))}
+                            </optgroup>
+                            <optgroup label="Kelas XII (12)">
+                              {classes.filter(c => c.name.startsWith('XII ')).map(c => (
+                                <option key={c.id || c.name} value={c.name}>{c.name}</option>
+                              ))}
+                            </optgroup>
+                          </select>
+                        </div>
+
+                        {/* Duration Period */}
+                        <div>
+                          <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
+                            Durasi Jam Pelajaran *
+                          </label>
+                          <select
+                            value={durationPeriod}
+                            onChange={(e) => setDurationPeriod(e.target.value)}
+                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-brand-500 outline-none"
+                          >
+                            {DURATION_PERIODS.map(d => (
+                              <option key={d} value={d}>{d}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Checklist Perlengkapan */}
+                      <div className="pt-2">
+                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-2">
+                          Checklist Fisik &amp; Kelengkapan Tas
+                        </label>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          {CHECKLIST_ITEMS.map(item => (
+                            <label
+                              key={item.id}
+                              className="flex items-center gap-2.5 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={checklist[item.id]}
+                                onChange={(e) => setChecklist({ ...checklist, [item.id]: e.target.checked })}
+                                className="w-4 h-4 rounded text-brand-600 focus:ring-brand-500"
+                              />
+                              <div>
+                                <div className="text-xs font-bold text-slate-800 dark:text-slate-200">{item.label}</div>
+                                <div className="text-[10px] text-slate-400">{item.desc}</div>
+                              </div>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Notes */}
+                      <div>
+                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
+                          Catatan Tambahan (Opsional)
+                        </label>
+                        <input
+                          type="text"
+                          value={notes}
+                          onChange={(e) => setNotes(e.target.value)}
+                          placeholder="Contoh: Digunakan untuk ujian presentasi tugas akhir"
+                          className="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-medium focus:ring-2 focus:ring-brand-500 outline-none"
+                        />
+                      </div>
+
+                      {/* Submit Button */}
+                      <div className="pt-3">
+                        <button
+                          type="submit"
+                          disabled={selectedProjector.status !== 'tersedia'}
+                          className={`w-full py-3.5 px-6 rounded-2xl font-extrabold text-sm shadow-lg flex items-center justify-center gap-2 transition-all ${
+                            selectedProjector.status === 'tersedia'
+                              ? 'bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-700 hover:to-indigo-700 text-white shadow-brand-500/25 active:scale-[0.99]'
+                              : 'bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed shadow-none'
+                          }`}
+                        >
+                          <span>⚡</span>
+                          <span>
+                            {selectedProjector.status === 'tersedia'
+                              ? `Konfirmasi Peminjaman ${selectedProjector.name}`
+                              : `Unit ${selectedProjector.name} Sedang ${selectedProjector.status.toUpperCase()}`}
+                          </span>
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 2: DAFTAR 5 UNIT & QR CODE */}
+            {activeTab === 'units' && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-lg font-bold text-slate-900 dark:text-white">Inventaris 5 Unit Proyektor Sekolah</h2>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Monitoring status fisik, jam lampu, dan cetak QR Code label unit.</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {projectors.map(proj => (
+                    <div
+                      key={proj.id}
+                      className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between space-y-4"
+                    >
+                      <div>
+                        <div className="flex items-center justify-between">
+                          <span className="font-extrabold text-xl text-slate-900 dark:text-white">{proj.name}</span>
+                          <span className="text-xs px-2.5 py-1 rounded-full font-bold uppercase" style={{
+                            backgroundColor: (proj.bagColorHex || '#3b82f6') + '20',
+                            color: proj.bagColorHex || '#3b82f6'
+                          }}>
+                            {proj.bagColor || proj.bag_color}
+                          </span>
+                        </div>
+                        <p className="text-xs font-semibold text-slate-600 dark:text-slate-300 mt-1">{proj.model}</p>
+
+                        <div className="mt-4 space-y-2 text-xs">
+                          <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800">
+                            <span className="text-slate-400">Lokasi Penyimpanan:</span>
+                            <span className="font-semibold text-slate-700 dark:text-slate-200">{proj.location}</span>
+                          </div>
+                          <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800">
+                            <span className="text-slate-400">Jam Lampu:</span>
+                            <span className="font-semibold text-slate-700 dark:text-slate-200">{proj.lampHours || proj.lamp_hours}</span>
+                          </div>
+                          <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800">
+                            <span className="text-slate-400">Status Terkini:</span>
+                            <span className={`font-bold capitalize ${
+                              proj.status === 'tersedia' ? 'text-emerald-500' :
+                              proj.status === 'dipinjam' ? 'text-amber-500' : 'text-rose-500'
+                            }`}>
+                              {proj.status}
+                            </span>
+                          </div>
+                        </div>
+
+                        {proj.status === 'dipinjam' && proj.activeBorrow && (
+                          <div className="mt-3 p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200/60 dark:border-amber-900/60 text-xs">
+                            <div className="font-bold text-amber-900 dark:text-amber-300">Peminjam Saat Ini:</div>
+                            <div className="text-slate-700 dark:text-slate-200 mt-0.5 font-medium">{proj.activeBorrow.teacherName}</div>
+                            <div className="text-slate-500 dark:text-slate-400 text-[11px]">Kelas: {proj.activeBorrow.destinationClass} ({proj.activeBorrow.durationPeriod})</div>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex gap-2 pt-2">
+                        {proj.status === 'dipinjam' ? (
+                          <button
+                            onClick={() => setReturnModalUnit(proj)}
+                            className="flex-1 py-2 px-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shadow-sm transition-all"
+                          >
+                            Kembalikan ↩
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => { setSelectedUnitId(proj.id); setActiveTab('peminjaman'); }}
+                            className="flex-1 py-2 px-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs shadow-sm transition-all"
+                          >
+                            Pinjam Unit ⚡
+                          </button>
+                        )}
+                        <button
+                          onClick={() => setQrModalUnit(proj)}
+                          className="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold"
+                          title="Cetak QR Code"
+                        >
+                          🖨️ QR
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* TAB 3: RIWAYAT AUDIT LOG */}
+            {activeTab === 'riwayat' && (
+              <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <h2 className="text-lg font-bold text-slate-900 dark:text-white">Riwayat Peminjaman &amp; Pengembalian</h2>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Audit trail lengkap pencatatan sirkulasi unit proyektor sekolah.</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      placeholder="Cari guru / kelas / unit..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white outline-none"
+                    />
+                    <select
+                      value={logFilterStatus}
+                      onChange={(e) => setLogFilterStatus(e.target.value)}
+                      className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white outline-none"
+                    >
+                      <option value="all">Semua Status</option>
+                      <option value="aktif">Sedang Aktif</option>
+                      <option value="selesai">Selesai</option>
+                      <option value="komplain">Ada Komplain</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead>
+                      <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-400 font-bold uppercase tracking-wider">
+                        <th className="py-3 px-3">Unit</th>
+                        <th className="py-3 px-3">Guru Peminjam</th>
+                        <th className="py-3 px-3">Kelas &amp; Durasi</th>
+                        <th className="py-3 px-3">Waktu Pinjam</th>
+                        <th className="py-3 px-3">Status</th>
+                        <th className="py-3 px-3">Catatan / Komplain</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                      {filteredLogs.length === 0 ? (
+                        <tr>
+                          <td colSpan="6" className="py-8 text-center text-slate-400">
+                            Belum ada riwayat peminjaman yang tercatat.
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredLogs.map(log => (
+                          <tr key={log.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
+                            <td className="py-3 px-3 font-bold text-slate-900 dark:text-white">
+                              {log.unit_id || log.unitId}
+                            </td>
+                            <td className="py-3 px-3 font-semibold text-slate-800 dark:text-slate-200">
+                              {log.teacher_name || log.teacherName}
+                            </td>
+                            <td className="py-3 px-3">
+                              <span className="font-bold text-brand-600 dark:text-brand-400">{log.destination_class || log.destinationClass}</span>
+                              <div className="text-[10px] text-slate-400">{log.duration_period || log.durationPeriod}</div>
+                            </td>
+                            <td className="py-3 px-3 text-slate-500 dark:text-slate-400">
+                              {new Date(log.borrow_time || log.borrowTime).toLocaleString('id-ID')}
+                            </td>
+                            <td className="py-3 px-3">
+                              <span className={`inline-block px-2 py-0.5 rounded-full font-bold uppercase text-[10px] ${
+                                log.status === 'aktif' ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300' :
+                                log.status === 'selesai' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300' :
+                                'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300'
+                              }`}>
+                                {log.status}
+                              </span>
+                            </td>
+                            <td className="py-3 px-3 text-slate-600 dark:text-slate-300">
+                              {log.complaint ? (
+                                <span className="text-rose-600 dark:text-rose-400 font-semibold">⚠️ {log.complaint}</span>
+                              ) : log.notes ? (
+                                <span>{log.notes}</span>
+                              ) : (
+                                <span className="text-slate-400">-</span>
+                              )}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 4: MASTER DATA (27 KELAS & 43 GURU) */}
+            {activeTab === 'master' && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* 27 Classes List */}
+                <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+                  <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                    <div>
+                      <h3 className="font-extrabold text-slate-900 dark:text-white">Daftar 27 Kelas Resmi</h3>
+                      <p className="text-xs text-slate-500">AKL (3), MP (6), TSM (6), TKR (6), TKJ (6)</p>
+                    </div>
+                    <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-brand-100 text-brand-700 dark:bg-brand-950/60 dark:text-brand-300">
+                      27 Kelas
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2 max-h-[480px] overflow-y-auto pr-1">
+                    {classes.map(c => (
+                      <div key={c.id || c.name} className="p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 text-center">
+                        <div className="font-extrabold text-xs text-slate-800 dark:text-slate-200">{c.name}</div>
+                        <div className="text-[10px] text-slate-400">{c.grade || c.name.split(' ')[0]}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 43 Teachers List */}
+                <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+                  <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                    <div>
+                      <h3 className="font-extrabold text-slate-900 dark:text-white">Daftar 43 Guru Resmi</h3>
+                      <p className="text-xs text-slate-500">Database Tenaga Pendidik SMK 11 Maret</p>
+                    </div>
+                    <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-indigo-100 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300">
+                      43 Guru
+                    </span>
+                  </div>
+
+                  <div className="space-y-1.5 max-h-[480px] overflow-y-auto pr-1">
+                    {teachers.map((t, idx) => (
+                      <div key={t.id || t.name} className="flex items-center justify-between p-2 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 text-xs">
+                        <div className="flex items-center gap-2">
+                          <span className="w-5 h-5 rounded-full bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-[10px] font-bold">
+                            {idx + 1}
+                          </span>
+                          <span className="font-bold text-slate-800 dark:text-slate-200">{t.name}</span>
+                        </div>
+                        <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-600 font-bold uppercase">
+                          Aktif
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </main>
+
+          {/* MODAL PENGEMBALIAN */}
+          {returnModalUnit && (
+            <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                  <h3 className="font-extrabold text-slate-900 dark:text-white">
+                    Pengembalian Unit: <span className="text-brand-600 dark:text-brand-400">{returnModalUnit.name}</span>
+                  </h3>
+                  <button
+                    onClick={() => setReturnModalUnit(null)}
+                    className="text-slate-400 hover:text-slate-600 font-bold"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <form onSubmit={handleReturnSubmit} className="space-y-4 text-xs">
+                  <div>
+                    <label className="block font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
+                      Kondisi Fisik Unit Saat Kembali
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <label className={`p-3 rounded-xl border flex items-center gap-2 cursor-pointer font-bold ${
+                        returnCondition === 'baik'
+                          ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400'
+                          : 'border-slate-200 dark:border-slate-700 text-slate-600'
+                      }`}>
+                        <input
+                          type="radio"
+                          name="condition"
+                          value="baik"
+                          checked={returnCondition === 'baik'}
+                          onChange={() => setReturnCondition('baik')}
+                        />
+                        <span>Kondisi Baik / Lengkap</span>
+                      </label>
+                      <label className={`p-3 rounded-xl border flex items-center gap-2 cursor-pointer font-bold ${
+                        returnCondition === 'rusak'
+                          ? 'border-rose-500 bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400'
+                          : 'border-slate-200 dark:border-slate-700 text-slate-600'
+                      }`}>
+                        <input
+                          type="radio"
+                          name="condition"
+                          value="rusak"
+                          checked={returnCondition === 'rusak'}
+                          onChange={() => setReturnCondition('rusak')}
+                        />
+                        <span>Ada Masalah / Keluhan</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {returnCondition === 'rusak' && (
+                    <div>
+                      <label className="block font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400 mb-1.5">
+                        Rincian Keluhan / Kerusakan *
+                      </label>
+                      <textarea
+                        required
+                        rows="3"
+                        value={returnComplaint}
+                        onChange={(e) => setReturnComplaint(e.target.value)}
+                        placeholder="Contoh: Kabel HDMI tidak tampil gambar, lampu redup, atau kabel power kendor..."
+                        className="w-full p-3 rounded-xl border border-rose-300 dark:border-rose-800 bg-rose-50/40 dark:bg-rose-950/20 text-slate-900 dark:text-white outline-none"
+                      />
+                    </div>
+                  )}
+
+                  <div className="flex gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setReturnModalUnit(null)}
+                      className="flex-1 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold"
+                    >
+                      Batal
+                    </button>
+                    <button
+                      type="submit"
+                      className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold shadow-md"
+                    >
+                      Selesai Kembalikan ↩
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* MODAL QR CODE GENERATOR */}
+          {qrModalUnit && (
+            <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-sm w-full p-6 border border-slate-200 dark:border-slate-800 shadow-2xl text-center space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
+                  <h3 className="font-extrabold text-slate-900 dark:text-white">{qrModalUnit.name}</h3>
+                  <button onClick={() => setQrModalUnit(null)} className="text-slate-400 font-bold">✕</button>
+                </div>
+
+                <div className="py-2 flex flex-col items-center justify-center">
+                  <div className="p-4 bg-white rounded-2xl shadow-inner border border-slate-200">
+                    <img
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
+                        window.location.origin + '/?unit=' + qrModalUnit.id
+                      )}`}
+                      alt={`QR Code ${qrModalUnit.id}`}
+                      className="w-44 h-44 mx-auto"
+                    />
+                  </div>
+                  <p className="text-xs font-bold text-slate-700 dark:text-slate-300 mt-3">{qrModalUnit.id} - {qrModalUnit.model}</p>
+                  <p className="text-[11px] text-slate-400">{qrModalUnit.bagColor || qrModalUnit.bag_color}</p>
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => window.print()}
+                    className="flex-1 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs"
+                  >
+                    🖨️ Cetak Stiker
+                  </button>
+                  <button
+                    onClick={() => setQrModalUnit(null)}
+                    className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs"
+                  >
+                    Tutup
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Footer */}
+          <footer className="border-t border-slate-200 dark:border-slate-800 py-4 text-center text-xs text-slate-400">
+            SIMPRO &copy; {new Date().getFullYear()} SMK 11 Maret. Sistem Informasi &amp; Peminjaman Proyektor Sekolah.
+          </footer>
+        </div>
+      );
+    }
+
+    // Render React App
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
