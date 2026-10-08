@@ -1,9 +1,7 @@
 -- =====================================================================
 -- SCRIPT UPDATE 27 KELAS SIMPRO
--- Database: simpro
 -- =====================================================================
 
-USE `simpro`;
 
 -- 1. Hapus seluruh data kelas lama
 DELETE FROM `kelas`;

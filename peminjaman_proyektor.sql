@@ -3,8 +3,6 @@
 -- Sistem Informasi Manajemen & Peminjaman Proyektor Sekolah (SIMPRO)
 -- =====================================================================
 
-CREATE DATABASE IF NOT EXISTS `simpro` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE `simpro`;
 
 -- ---------------------------------------------------------------------
 -- 1. TABEL: proyektor
